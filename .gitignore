@@ -1,0 +1,7 @@
+debugging/
+venv/
+*.json
+*.bin
+*.pyc
+*.db
+.ipynb_checkpoints
