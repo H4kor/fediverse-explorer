@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fediverse Explorer</title>
+</head>
+<body style="margin: 0; padding: 0; overflow: hidden;height: 100vh;background-color: #191b22;">
+    <svg id="chart" width="100%" height="100%"></svg>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // init box
+        const min_x = -0.02;
+        const max_x = 0.07;
+        const min_y = 0.02;
+        const max_y = 0.12;
+
+        const svg = d3.select("#chart");
+
+        const width = svg.node().getBoundingClientRect().width;
+        const height = svg.node().getBoundingClientRect().height;
+        const aspect = width / height;
+
+        let zoom = d3.zoom()
+            .on('zoom', handleZoom);
+        
+
+        function handleZoom(e) {
+            d3.select('svg g')
+                .attr('transform', e.transform);
+        }
+
+        function initZoom() {
+            d3.select('svg')
+                .call(zoom);
+        }
+
+        const g = svg.append("g");
+        
+        const text = svg.append("text")
+            .attr("x", 5)
+            .attr("y", 29)
+            .attr("font-size", "24px")
+            .attr("font-family", "monospace")
+            .attr("font-weight", "bold")
+            .attr("fill", "white")
+            .attr("stroke", "black")
+            .attr("stroke-width", "1px")
+            .text("FediExplorer");
+
+        d3.json("data.json").then(function(json) {
+            g.selectAll("circle")
+                .data(json)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d) { return (d[1][0] - min_x) / (max_x - min_x) * Math.min(width, height); })
+                .attr("cy", function(d) { return (d[1][1] - min_y) / (max_y - min_y) * Math.min(width, height); })
+                .attr("r", 1)
+                .attr("opacity", 0.5)
+                .attr("fill", "#ddaa00")
+                .on("click", function(e, d) {
+                   console.log(d[0]);
+                   text.text(d[0]);
+                })
+                .on("mouseover", function(e, d) {
+                    d3.select(this).attr("fill", "#00aaFF").attr("opacity", 1);
+                })
+                .on("mouseout", function(e, d) {
+                    d3.select(this).attr("fill", "#ddaa00").attr("opacity", 0.5);
+                });
+            initZoom();        
+        });
+    </script>
+</body>
+</html>
