@@ -6,23 +6,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script defer data-domain="h4kor.github.io/fediverse-explorer" src="https://plausible.libove.org/js/plausible.js"></script>
     <title>Fediverse Explorer</title>
+    <style>
+        .search {
+            /* place the search box in the top right corner */
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 1em;
+        }
+    </style>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden;height: 100vh;background-color: #191b22; color: white">
-    <h1>FediExplorer</h1>
-    <div>Search: <input type="text" id="searchBox"><p id="result"></p></div>
+    <div class="search">Search: <input type="text" id="searchBox"><p id="result"></p></div>
     <svg id="chart" width="100%" height="100%"></svg>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         // search function
-        document.getElementById("searchBox").onkeydown = function(e) {
-            if (event.key == "Enter") {
-                if (!highlightNode(e.target.value)) {
-                    document.getElementById('result').textContent = "could not exactly match for node";
-                } else {
-                    document.getElementById('result').textContent = "";
-                }
-            }
+        document.getElementById("searchBox").onkeyup = function(e) {
+            searchForNodes(e.target.value);
         };
+        document.getElementById("searchBox").onsubmit = function(e) {
+            searchForNodes(e.target.value);
+        };
+
+        const NODE_COLOR = "#ddaa00";
+        const NODE_OPACITY = 0.5;
+        const NODE_RADIUS = 1;
+
+        const HIGHLIGHT_COLOR = "#00AAFF";
+        const HIGHLIGHT_OPACITY = 0.9;
+        const HIGHLIGHT_RADIUS = 2;
+
+        const SEARCH_COLOR = "#FF4400";
+        const SEARCH_OPACITY = 0.9;
+        const SEARCH_RADIUS = 4;
 
         // init box
         const min_x = -0.02;
@@ -39,7 +56,7 @@
         let zoom = d3.zoom()
             .on('zoom', handleZoom);
 
-        var searchNode = null;
+        var markedNode = null;
         
         function zoomTo(x, y) {
             // FIXME: broken, copied from examples where the handlers are different
@@ -62,34 +79,40 @@
                 .call(zoom);
         }
 
-        function highlightNode(name) {
+        function markNode(node) {
+            if (markedNode != null) {
+                d3.select(markedNode).attr("mark", "false");
+                recolorNode(markedNode);
+            }
+            if (node != null) {
+                d3.select(node).attr("mark", "true");
+                console.log(node);
+                text.text(node.getAttribute("data-name"));
+                recolorNode(node);
+            } else {
+                text.text("");
+            }
+            markedNode = node;
+
+        }
+
+        function searchForNodes(name) {
             let nodeName = name.replaceAll(".", "\\.");
             let node = d3.select("#node-"+nodeName).node();
-            if (node == null) {
-                console.log("cannot find node id: node-" + name);
-                return false;
-            }
-            if (searchNode != null) {
-                d3.select(searchNode).attr('mark', 'false');
-                recolorNode(searchNode);
-            }
-            searchNode = node;
-            d3.select(node).attr('mark', 'true');
-            recolorNode(node);
-            text.text(name);
+            markNode(node);
             return true;
         }
 
         function recolorNode(node) {
             if (d3.select(node).attr('select') == 'true') {
                 // highlighted by mouse over
-                d3.select(node).attr("fill", "#00aaFF").attr("opacity", 1);
+                d3.select(node).attr("fill", HIGHLIGHT_COLOR).attr("opacity", HIGHLIGHT_OPACITY).attr("r", HIGHLIGHT_RADIUS);
             } else if (d3.select(node).attr('mark') == 'true') {
                 // highlighted by search
-                d3.select(node).attr("fill", "#FF0000").attr("opacity", 1);
+                d3.select(node).attr("fill", SEARCH_COLOR).attr("opacity", SEARCH_OPACITY).attr("r", SEARCH_RADIUS);
             } else {
                 // regular node
-                d3.select(node).attr("fill", "#ddaa00").attr("opacity", 0.5);
+                d3.select(node).attr("fill", NODE_COLOR).attr("opacity", NODE_OPACITY).attr("r", NODE_RADIUS);                
             }
         }
 
@@ -111,20 +134,15 @@
                 .data(json)
                 .enter()
                 .append("circle")
+                .attr("data-name", function(d) { return d[0]; })
                 .attr("id", function(d) { return "node-" + d[0] })
                 .attr("cx", function(d) { return (d[1][0] - min_x) / (max_x - min_x) * Math.min(width, height); })
                 .attr("cy", function(d) { return (d[1][1] - min_y) / (max_y - min_y) * Math.min(width, height); })
-                .attr("r", 1)
-                .attr("opacity", 0.5)
-                .attr("fill", "#ddaa00")
+                .attr("fill", NODE_COLOR)
+                .attr("opacity", NODE_OPACITY)
+                .attr("r", NODE_RADIUS)
                 .on("click", function(e, d) {
-                   console.log(d[0]);
-                   text.text(d[0]);
-                   if(searchNode != null) {
-                       d3.select(searchNode).attr('mark', 'false')
-                       recolorNode(searchNode)
-                       searchNode = null;
-                   }
+                    markNode(this);
                 })
                 .on("mouseover", function(e, d) {
                     d3.select(this).attr('select', 'true')
