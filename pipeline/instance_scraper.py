@@ -3,31 +3,13 @@ import time
 import aiohttp
 import json
 import sqlite3
+from utils import is_spam
 
 START_INSTANCE = "chaos.social"
 CONCURRENT_REQUESTS = 100
 DB_NAME = "mastodon.db"
 
 INSTANCE_CACHE = {}
-
-SUBDOMAIN_SPAM = [
-    ".hwl.li",
-    ".skorpil.cz",
-    ".cispa.saarland",
-    ".glaceon.social",
-    ".egirls.gay",
-    ".monads.online",
-    ".pixie.town",
-    ".websec.saarland",
-    ".gab.best",
-]
-
-def is_spam(instance):
-    for spam in SUBDOMAIN_SPAM:
-        if spam in instance:
-            print("spam", instance)
-            return True
-    return False
 
 async def get_instance_data(session, con, instance):
     peers = None
